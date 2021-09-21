@@ -5,3 +5,4 @@ Docker and Docker-Compose files in this repository belong to a project that uses
 - React
 - Postgres
 - Celery
+- Redis
