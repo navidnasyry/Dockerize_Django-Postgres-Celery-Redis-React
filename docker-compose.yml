@@ -1,0 +1,87 @@
+version: '3'
+ 
+services:
+
+  #backend
+  backend:
+    container_name: backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile 
+    ports:
+      - "8000:8000" #host : container
+    volumes:
+      - ./backend/media:/app/backend/media
+      
+    command: >
+      sh -c "python3 manage.py migrate --no-input && 
+              python3 manage.py runserver 0.0.0.0:8000"
+
+    #for collect static files : python3 manage.py collectstatic --noinput
+
+    env_file: 
+      - .backend.env
+    depends_on:
+      - db
+    restart: always
+
+
+  #frontend
+  frontend:
+    container_name: frontend
+
+    #Production mode => false
+    stdin_open: true
+
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile 
+    
+    ports:
+      - "3000:3000"
+    
+    restart: always
+    
+  
+  #database
+  db:
+    image: postgres:9-alpine
+    container_name: db
+    restart: always
+    ports: 
+      - "5432"
+    env_file: 
+      - .db.env
+
+    volumes: 
+     - pgdata:/var/lib/postgresql/data/
+
+
+  #redis
+  redis:
+    image: redis:6.2.5
+    container_name: redis
+
+
+  #celery
+  celery:
+    restart: always
+    build:
+      context: ./backend
+    command: celery -A App worker -l INFO
+    # volumes:
+    #   - ./app:/app
+  
+    env_file: 
+      - .celery.env
+      
+    depends_on:
+      - db
+      - redis
+      - backend
+  
+
+  
+
+volumes: 
+  pgdata:
